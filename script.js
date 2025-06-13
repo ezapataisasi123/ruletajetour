@@ -172,3 +172,4 @@ document.addEventListener('DOMContentLoaded', () => {
     // Llamada inicial para establecer el tamaño y dibujar la ruleta
     resizeCanvasAndDraw();
     spinBtn.disabled = true;
+});
