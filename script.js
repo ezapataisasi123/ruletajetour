@@ -7,112 +7,118 @@ document.addEventListener('DOMContentLoaded', () => {
     const loadBtn = document.getElementById('loadBtn');
     const participantesInput = document.getElementById('participantesInput');
     const ganadoresList = document.getElementById('ganadoresList');
-    const colorFondoInput = document.getElementById('colorFondo');
-    const imagenFondoInput = document.getElementById('imagenFondoInput');
-    const removerImagenBtn = document.getElementById('removerImagenBtn');
     const modal = document.getElementById('modalGanador');
     const nombreGanadorEl = document.getElementById('nombreGanador');
     const closeModalBtn = document.querySelector('.close-button');
 
-    // --- Carga de Sonidos --- // <<-- AÑADIDO
-    // Asegúrate de tener los archivos 'sonido-giro.mp3' y 'sonido-ganador.mp3' en la misma carpeta.
+    // --- Carga de Sonidos ---
     const sonidoGiro = new Audio('sonido-giro.mp3');
     const sonidoGanador = new Audio('sonido-ganador.mp3');
-    sonidoGiro.loop = true; // El sonido de giro debe ser un loop continuo
-    sonidoGiro.volume = 0.5; // Ajusta el volumen si es muy alto
+    sonidoGiro.loop = true;
+    sonidoGiro.volume = 0.5;
 
     // --- Estado de la aplicación ---
     let participantes = [];
     let rotacionActual = 0;
     let girando = false;
+    let audioInicializado = false;
     const coloresSegmento = ['#1f2937', '#374151', '#4b5563', '#6b7280'];
 
     // --- Lógica para Responsividad del Canvas ---
     function debounce(func, delay) { let timeout; return (...args) => { clearTimeout(timeout); timeout = setTimeout(() => func.apply(this, args), delay); }; }
     const resizeCanvasAndDraw = () => { const containerSize = ruletaWrapper.clientWidth; canvas.width = containerSize; canvas.height = containerSize; dibujarRuleta(); };
 
-    // --- Lógica de Personalización ---
-    colorFondoInput.addEventListener('input', (e) => { document.body.style.backgroundColor = e.target.value; });
-    imagenFondoInput.addEventListener('change', (e) => { const file = e.target.files[0]; if (file) { const reader = new FileReader(); reader.onload = (event) => { document.body.style.backgroundImage = `url('${event.target.result}')`; }; reader.readAsDataURL(file); } });
-    removerImagenBtn.addEventListener('click', () => { document.body.style.backgroundImage = 'none'; });
-    
-    // --- Lógica del Modal ---
+    // --- Modal y Confeti ---
     const mostrarModal = (ganador) => { nombreGanadorEl.textContent = ganador; modal.style.display = 'flex'; };
     const cerrarModal = () => { modal.style.display = 'none'; };
     closeModalBtn.addEventListener('click', cerrarModal);
     window.addEventListener('click', (event) => { if (event.target === modal) { cerrarModal(); } });
-
-    // --- Lógica del Confeti ---
     const lanzarConfeti = () => { const options = { particleCount: 120, spread: 70, zIndex: 1001 }; confetti({ ...options, angle: 60, origin: { x: 0 } }); confetti({ ...options, angle: 120, origin: { x: 1 } }); };
 
-    // --- Lógica de la Ruleta ---
+     // ===================================================================
+    // FUNCIÓN DE DIBUJO DE RULETA - VERSIÓN FINAL CON SEPARACIONES
+    // ===================================================================
     const dibujarRuleta = () => {
         const numParticipantes = participantes.length;
         const centro = canvas.width / 2;
-        const radio = centro - (canvas.width * 0.01);
+        const radio = centro * 0.98;
+
         ctx.clearRect(0, 0, canvas.width, canvas.height);
         if (numParticipantes === 0) return;
-        const fontSize = Math.max(10, canvas.width * 0.03);
-        ctx.font = `bold ${fontSize}px Poppins`;
+
         const anguloPorSegmento = 2 * Math.PI / numParticipantes;
-        participantes.forEach((participante, i) => {
+        
+        // --- Bucle principal de dibujo ---
+        for (let i = 0; i < numParticipantes; i++) {
             const anguloInicio = i * anguloPorSegmento;
+            const anguloFin = anguloInicio + anguloPorSegmento;
+            const anguloMedio = anguloInicio + anguloPorSegmento / 2;
+            const participante = participantes[i];
+
+            // <<-- PASO 1: Volvemos a dibujar el fondo de cada segmento ("quesito")
             ctx.beginPath();
             ctx.moveTo(centro, centro);
-            ctx.arc(centro, centro, radio, anguloInicio, anguloInicio + anguloPorSegmento);
+            ctx.arc(centro, centro, radio, anguloInicio, anguloFin);
             ctx.closePath();
             ctx.fillStyle = coloresSegmento[i % coloresSegmento.length];
             ctx.fill();
+
+            // <<-- PASO 2: Dibujamos un borde definido para la separación visual
+            // Usamos el color de fondo principal para simular un "espacio"
             ctx.save();
-            ctx.strokeStyle = "#121826";
-            ctx.lineWidth = 3;
+            ctx.strokeStyle = '#121826';
+            ctx.lineWidth = numParticipantes > 100 ? 3 : 2; // Líneas más gruesas si hay muchos
             ctx.stroke();
             ctx.restore();
+            
+            // <<-- PASO 3: Mantenemos el texto radial que funciona muy bien
             ctx.save();
-            ctx.fillStyle = '#f9fafb';
             ctx.translate(centro, centro);
-            ctx.rotate(anguloInicio + anguloPorSegmento / 2);
-            ctx.textAlign = 'right';
+            ctx.rotate(anguloMedio);
+            
+            // Ajustes de fuente y alineación
+            let fontSize = Math.max(8, canvas.width * 0.018);
+            ctx.font = `600 ${fontSize}px Poppins`;
+            ctx.fillStyle = '#f9fafb';
+            ctx.textAlign = 'center';
             ctx.textBaseline = 'middle';
-            ctx.fillText(participante.substring(0, 20), radio * 0.95, 0);
+            
+            // Dibujar el texto a lo largo del eje rotado
+            ctx.fillText(participante, radio * 0.82, 0);
+            
             ctx.restore();
-        });
+        }
     };
+    // ===================================================================
+    // FIN DE LA FUNCIÓN DE DIBUJO
+    // ===================================================================
 
     const girar = () => {
         if (girando || participantes.length === 0) return;
-
-        // Iniciar sonido de giro // <<-- AÑADIDO
-        sonidoGiro.play().catch(e => console.error("Error al reproducir sonido:", e));
-
+        if (!audioInicializado) {
+            sonidoGiro.play().catch(() => {}); sonidoGiro.pause();
+            sonidoGanador.play().catch(() => {}); sonidoGanador.pause();
+            audioInicializado = true;
+        }
+        sonidoGiro.play().catch(e => console.error("Error giro:", e));
         girando = true;
         spinBtn.disabled = true;
-        
-        const vueltasCompletas = 8 * 360;
-        const extraRandom = Math.floor(Math.random() * 360);
-        const nuevaRotacion = rotacionActual + vueltasCompletas + extraRandom;
-
-        canvas.style.transform = `rotate(${nuevaRotacion}deg)`;
-        rotacionActual = nuevaRotacion;
-
+        const vueltas = 8 * 360;
+        const extra = Math.floor(Math.random() * 360);
+        rotacionActual += vueltas + extra;
+        canvas.style.transform = `rotate(${rotacionActual}deg)`;
         setTimeout(determinarGanador, 7000);
     };
 
     const determinarGanador = () => {
-        // Detener el sonido de giro // <<-- AÑADIDO
         sonidoGiro.pause();
-        sonidoGiro.currentTime = 0; // Reiniciar el audio para la próxima vez
-
-        const numParticipantes = participantes.length;
-        const anguloPorSegmento = 360 / numParticipantes;
-        const anguloFinalNormalizado = rotacionActual % 360;
-        const anguloPunteroInvertido = 360 - anguloFinalNormalizado;
-        const indiceGanador = Math.floor(anguloPunteroInvertido / anguloPorSegmento);
+        sonidoGiro.currentTime = 0;
+        const anguloFinal = rotacionActual % 360;
+        const anguloGanador = 360 - anguloFinal;
+        const indiceGanador = Math.floor(anguloGanador / (360 / participantes.length));
         const ganador = participantes[indiceGanador];
-
-        // Reproducir sonido de ganador // <<-- AÑADIDO
-        sonidoGanador.play().catch(e => console.error("Error al reproducir sonido:", e));
-
+        
+        sonidoGanador.play().catch(e => console.error("Error ganador:", e));
         mostrarModal(ganador);
         lanzarConfeti();
 
@@ -124,26 +130,29 @@ document.addEventListener('DOMContentLoaded', () => {
         participantes.splice(indiceGanador, 1);
         
         setTimeout(() => {
+            // Redibujar la ruleta con un participante menos
+            const vueltasActuales = rotacionActual - (rotacionActual % 360);
+            rotacionActual = vueltasActuales;
+            canvas.style.transition = 'none';
+            canvas.style.transform = `rotate(${rotacionActual}deg)`;
+            setTimeout(() => { canvas.style.transition = 'transform 7s cubic-bezier(0.25, 1, 0.5, 1)'; }, 50);
+
             dibujarRuleta();
+
             if (participantes.length > 0) {
                 girando = false;
                 spinBtn.disabled = false;
             } else {
                 alert("¡Todos los participantes han sido premiados!");
             }
-        }, 1000);
+        }, 1500);
     };
 
     const cargarParticipantes = () => {
         const nombres = participantesInput.value.split('\n').map(n => n.trim()).filter(n => n !== '');
-        
-        if (nombres.length < 2) {
-            alert("Por favor, introduce al menos 2 participantes.");
-            return;
-        }
+        if (nombres.length < 2) { alert("Introduce al menos 2 participantes."); return; }
         participantes = nombres;
         alert(`${participantes.length} participantes cargados.`);
-        
         rotacionActual = 0;
         canvas.style.transform = 'rotate(0deg)';
         dibujarRuleta();
@@ -153,9 +162,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // --- Asignar Eventos e Inicio ---
     spinBtn.addEventListener('click', girar);
     loadBtn.addEventListener('click', cargarParticipantes);
-    
     window.addEventListener('resize', debounce(resizeCanvasAndDraw, 100));
-    
     resizeCanvasAndDraw();
     spinBtn.disabled = true;
 });

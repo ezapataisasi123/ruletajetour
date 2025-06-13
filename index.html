@@ -1,9 +1,9 @@
-<!DOCTYPE html>
+<<!DOCTYPE html>
 <html lang="es">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Ruleta de Premios Elegante</title>
+    <title>Ruleta de Premios Profesional</title>
     <link rel="stylesheet" href="style.css">
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.3/dist/confetti.browser.min.js"></script>
 </head>
@@ -12,41 +12,29 @@
     <div class="main-container">
         <header class="main-header">
             <h1>Ruleta de Premios</h1>
-            <div class="controles-globales">
-                <label for="colorFondo">Color Fondo:</label>
-                <input type="color" id="colorFondo" value="#121826">
-                
-                <label for="imagenFondoInput" class="boton-archivo">Cargar Imagen</label>
-                <input type="file" id="imagenFondoInput" accept="image/*">
-                
-                <button id="removerImagenBtn">Quitar Imagen</button>
-            </div>
         </header>
 
-        <main class="layout-grid">
-            <section class="panel columna-izquierda">
+        <main class="ruleta-seccion">
+            <div class="ruleta-wrapper">
+                <canvas id="ruletaCanvas"></canvas> <img src="TU_LOGO_AQUI.png" alt="Logo de la empresa" class="logo-empresa">
+                <div class="puntero"></div>
+            </div>
+            <button id="spinBtn" class="boton-girar">¡Girar la Ruleta!</button>
+        </main>
+
+        <footer class="paneles-control">
+            <section class="panel">
                 <h2>Participantes</h2>
                 <textarea id="participantesInput" rows="10" placeholder="Pega aquí la lista de participantes, uno por línea..."></textarea>
                 <button id="loadBtn" class="boton-primario">Cargar Participantes</button>
             </section>
-
-            <section class="columna-central">
-                <div class="ruleta-container">
-                    <div class="ruleta-wrapper">
-                        <canvas id="ruletaCanvas" width="550" height="550"></canvas>
-                        <img src="TU_LOGO_AQUI.png" alt="Logo de la empresa" class="logo-empresa">
-                        <div class="puntero"></div>
-                    </div>
-                    <button id="spinBtn" class="boton-girar">¡Girar la Ruleta!</button>
-                </div>
-            </section>
-
-            <section class="panel columna-derecha">
+            
+            <section class="panel">
                 <h2>🏆 Ganadores</h2>
                 <ul id="ganadoresList">
                     </ul>
             </section>
-        </main>
+        </footer>
     </div>
 
     <div id="modalGanador" class="modal">
